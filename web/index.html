@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LedgerLens — Autonomous AP & Invoice Copilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo-icon">⚡</div>
+      <div class="brand-text">
+        <span class="brand-title">LedgerLens</span>
+        <span class="brand-subtitle">AI Accounts Payable & Invoice Copilot</span>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <div id="provider-badge-group" class="provider-badges">
+        <span class="p-badge" id="badge-groq" title="Groq Qwen 27B Vision/Text"><span class="dot"></span> Groq</span>
+        <span class="p-badge" id="badge-openai" title="OpenAI GPT-4o-mini"><span class="dot"></span> OpenAI</span>
+        <span class="p-badge" id="badge-ollama" title="Local Ollama"><span class="dot"></span> Ollama</span>
+      </div>
+      <button class="btn btn-secondary" id="btn-open-settings">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        API Keys & Models
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="tab-upload">
+          <span class="nav-icon">📥</span> Ingest & Process
+        </button>
+        <button class="nav-item" data-tab="tab-review">
+          <span class="nav-icon">⚠️</span> Review Queue <span class="counter-badge" id="cnt-review">0</span>
+        </button>
+        <button class="nav-item" data-tab="tab-ledger">
+          <span class="nav-icon">📑</span> Verified Ledger <span class="counter-badge" id="cnt-ledger">0</span>
+        </button>
+        <button class="nav-item" data-tab="tab-analytics">
+          <span class="nav-icon">📊</span> Analytics & ROI
+        </button>
+        <button class="nav-item" data-tab="tab-logs">
+          <span class="nav-icon">🔍</span> Audit & Logs
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="quick-status-card">
+          <div class="qs-title">Straight-Through Rate</div>
+          <div class="qs-val" id="qs-str">--%</div>
+          <div class="qs-sub">Auto-approved without touch</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Workspace -->
+    <section class="workspace">
+      <!-- Notification Banner -->
+      <div id="banner-no-keys" class="banner banner-warning" style="display: none;">
+        <span><strong>Setup Required:</strong> No AI provider key is configured. Add a Groq (free/fast) or OpenAI key to process documents.</span>
+        <button class="btn btn-sm btn-dark" onclick="openSettingsModal()">Setup API Key</button>
+      </div>
+
+      <!-- Tab 1: Upload & Ingest -->
+      <div class="tab-pane active" id="tab-upload">
+        <div class="pane-header">
+          <h2>Ingest Documents</h2>
+          <p class="text-muted">Upload digital invoices (PDF) or scanned receipts/photos (PNG, JPG, WEBP). LedgerLens auto-validates arithmetic, dates, and duplicates.</p>
+        </div>
+
+        <div class="upload-grid">
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.webp">
+            <div class="drop-content">
+              <div class="drop-icon">📄</div>
+              <h3>Drag & drop invoices or receipts here</h3>
+              <p>Supports Multi-page PDF, Scanned Images & Photos (up to 20 MB)</p>
+              <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Browse Files</button>
+            </div>
+          </div>
+
+          <div class="sample-box card">
+            <div class="card-header">
+              <span class="card-title">Quick Test with Built-in Samples</span>
+            </div>
+            <p class="text-sm text-muted">Test edge cases, noisy receipts, and arithmetic validation without uploading your own files:</p>
+            <div class="sample-list" id="sample-list">
+              <div class="loader-skeleton">Loading samples...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Processing Queue / Progress -->
+        <div id="processing-section" class="card" style="display: none; margin-top: 1.5rem;">
+          <div class="card-header">
+            <span class="card-title">Processing Pipeline</span>
+            <span class="badge" id="proc-counter">0 in flight</span>
+          </div>
+          <div id="processing-items" class="proc-list"></div>
+        </div>
+
+        <!-- Recent Ingest Activity Table -->
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
+            <span class="card-title">Recent Ingest Activity</span>
+            <div class="actions">
+              <button class="btn btn-sm btn-outline" onclick="loadDocuments()">Refresh</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Vendor</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Confidence</th>
+                  <th>Provider</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recent-docs-tbody">
+                <tr><td colspan="7" class="text-center text-muted">No documents processed yet. Upload a file above to begin.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Review Queue -->
+      <div class="tab-pane" id="tab-review">
+        <div class="pane-header">
+          <h2>Human-in-the-Loop Review Queue</h2>
+          <p class="text-muted">Invoices requiring human verification due to arithmetic mismatches, missing required fields, low confidence, or suspected duplicates.</p>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Flagged Issues</th>
+                  <th>Extracted Vendor</th>
+                  <th>Total</th>
+                  <th>Confidence</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="review-docs-tbody">
+                <tr><td colspan="6" class="text-center text-muted">Queue clean! No invoices currently waiting for review.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Verified Ledger -->
+      <div class="tab-pane" id="tab-ledger">
+        <div class="pane-header flex-between">
+          <div>
+            <h2>Verified Accounts Payable Ledger</h2>
+            <p class="text-muted">Fully validated invoices ready for accounting sync, export, and payment.</p>
+          </div>
+          <div class="export-btn-group">
+            <a href="/api/export.xlsx" class="btn btn-primary" download>
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export Excel (.xlsx)
+            </a>
+            <a href="/api/export.csv" class="btn btn-secondary" download>Export CSV</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Vendor</th>
+                  <th>Invoice #</th>
+                  <th>Category</th>
+                  <th>Currency</th>
+                  <th>Subtotal</th>
+                  <th>Tax</th>
+                  <th>Total</th>
+                  <th>Source</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ledger-docs-tbody">
+                <tr><td colspan="10" class="text-center text-muted">No approved invoices yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Analytics -->
+      <div class="tab-pane" id="tab-analytics">
+        <div class="pane-header">
+          <h2>Financial Analytics & Reliability ROI</h2>
+          <p class="text-muted">Real-time throughput metrics, cost comparisons, and spend categorisation.</p>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="m-label">Straight-Through Rate (STR)</div>
+            <div class="m-value" id="m-str">0%</div>
+            <div class="m-sub">Target: &gt; 80% with 0 math hallucinations</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Manual Touch Rate</div>
+            <div class="m-value" id="m-touch">0%</div>
+            <div class="m-sub">Invoices corrected or reviewed by human</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Avg Extraction Latency</div>
+            <div class="m-value" id="m-latency">0s</div>
+            <div class="m-sub">Groq LPU vs OpenAI vs Ollama</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Estimated AI Inference Cost</div>
+            <div class="m-value" id="m-cost">$0.000</div>
+            <div class="m-sub">Based on input/output token usage</div>
+          </div>
+        </div>
+
+        <div class="charts-grid" style="margin-top: 1.5rem;">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Spend by Category</span></div>
+            <div id="category-breakdown" class="breakdown-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Top Vendors</span></div>
+            <div id="vendor-breakdown" class="breakdown-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Logs -->
+      <div class="tab-pane" id="tab-logs">
+        <div class="pane-header flex-between">
+          <div>
+            <h2>Audit Trail & Execution Logs</h2>
+            <p class="text-muted">Every pipeline step, retry attempt, fallback switch, and validation rule triggered.</p>
+          </div>
+          <button class="btn btn-sm btn-outline" onclick="loadLogs()">Refresh Logs</button>
+        </div>
+        <div class="card log-viewer">
+          <pre id="log-console">Loading system logs...</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Review & Edit Modal Drawer -->
+  <div class="modal-backdrop" id="review-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 id="rev-filename">Review Invoice</h3>
+          <span class="badge" id="rev-status-badge">needs_review</span>
+        </div>
+        <button class="btn-close" onclick="closeReviewModal()">&times;</button>
+      </div>
+
+      <div class="modal-body modal-split">
+        <!-- Left: Document Preview -->
+        <div class="preview-panel">
+          <div class="preview-header">
+            <span>Document Source</span>
+            <a id="rev-file-link" href="#" target="_blank" class="text-sm">Open in new tab ↗</a>
+          </div>
+          <iframe id="doc-iframe" src="" class="doc-frame"></iframe>
+        </div>
+
+        <!-- Right: Verification & Edit Form -->
+        <div class="form-panel">
+          <div id="rev-issues-alert" class="issues-box"></div>
+
+          <form id="review-form">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Vendor / Seller Name *</label>
+                <input type="text" id="f-vendor" required>
+              </div>
+              <div class="form-group flex-1">
+                <label>Invoice Number</label>
+                <input type="text" id="f-number">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Invoice Date (YYYY-MM-DD) *</label>
+                <input type="text" id="f-date" required>
+              </div>
+              <div class="form-group flex-1">
+                <label>Due Date (YYYY-MM-DD)</label>
+                <input type="text" id="f-due">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Currency *</label>
+                <input type="text" id="f-currency" required>
+              </div>
+              <div class="form-group flex-1">
+                <label>Category *</label>
+                <select id="f-category"></select>
+              </div>
+            </div>
+
+            <div class="form-row math-row">
+              <div class="form-group flex-1">
+                <label>Subtotal</label>
+                <input type="number" step="0.01" id="f-subtotal">
+              </div>
+              <div class="form-group flex-1">
+                <label>Tax / VAT / GST</label>
+                <input type="number" step="0.01" id="f-tax">
+              </div>
+              <div class="form-group flex-1">
+                <label>Total Amount *</label>
+                <input type="number" step="0.01" id="f-total" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Reviewer Notes / Rejection Reason</label>
+              <textarea id="f-notes" rows="2" placeholder="Optional notes for audit trail..."></textarea>
+            </div>
+
+            <div class="audit-meta" id="rev-audit-meta"></div>
+          </form>
+        </div>
+      </div>
+
+      <div class="modal-footer flex-between">
+        <div>
+          <button class="btn btn-danger" onclick="submitReview('reject')">Reject Document</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="submitReview('save')">Save Edits Only</button>
+          <button class="btn btn-primary" onclick="submitReview('approve')">Verify & Approve to Ledger</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings & API Key Setup Modal -->
+  <div class="modal-backdrop" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3>AI Providers & API Keys</h3>
+          <p class="text-sm text-muted">Configure your API keys. Keys can be tested live and stored safely.</p>
+        </div>
+        <button class="btn-close" onclick="closeSettingsModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="providers-config-list"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeSettingsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

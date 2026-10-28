@@ -1,0 +1,151 @@
+{
+  "summary": {
+    "total_test_cases": 10,
+    "system_pass_rate": "60.0%",
+    "baseline_pass_rate": "70.0%",
+    "math_error_catch_rate": {
+      "ledgerlens": "100% (Flagged & Routed to Review)",
+      "baseline": "0% (Undetected Silent Error)"
+    },
+    "duplicate_detection_rate": {
+      "ledgerlens": "100% (Flagged Duplicate)",
+      "baseline": "0% (Double Payment Risk)"
+    },
+    "non_invoice_rejection_rate": {
+      "ledgerlens": "100% (Rejected)",
+      "baseline": "0% (Hallucinated Contract Values)"
+    },
+    "average_time_per_invoice": {
+      "manual_baseline": "159.0s (~2.6 min)",
+      "ledgerlens": "6.26s"
+    },
+    "time_saved_percent": "96.1%"
+  },
+  "results": {
+    "01_clean_aws_cloud_invoice.pdf": {
+      "passed": true,
+      "status_match": true,
+      "field_score": 1.0,
+      "issues_matched": true,
+      "actual_status": "auto_approved",
+      "actual_issues": [],
+      "confidence": 0.85,
+      "latency_s": 13.38,
+      "status": "auto_approved"
+    },
+    "02_freelance_dev_consulting.pdf": {
+      "passed": false,
+      "status_match": false,
+      "field_score": 1.0,
+      "issues_matched": true,
+      "actual_status": "needs_review",
+      "actual_issues": [],
+      "confidence": 0.05,
+      "latency_s": 8.1,
+      "status": "needs_review"
+    },
+    "03_emirates_flight_receipt.pdf": {
+      "passed": true,
+      "status_match": true,
+      "field_score": 0.75,
+      "issues_matched": true,
+      "actual_status": "auto_approved",
+      "actual_issues": [
+        "line_items_mismatch"
+      ],
+      "confidence": 0.88,
+      "latency_s": 6.16,
+      "status": "auto_approved"
+    },
+    "04_restaurant_bistro_receipt.jpg": {
+      "passed": false,
+      "status_match": false,
+      "field_score": 0.0,
+      "issues_matched": true,
+      "actual_status": "failed",
+      "actual_issues": [
+        "extract_failed"
+      ],
+      "confidence": 0.0,
+      "latency_s": 0.06,
+      "status": "failed"
+    },
+    "05_telecom_internet_bill.pdf": {
+      "passed": true,
+      "status_match": true,
+      "field_score": 0.75,
+      "issues_matched": true,
+      "actual_status": "auto_approved",
+      "actual_issues": [
+        "foreign_currency",
+        "line_items_mismatch"
+      ],
+      "confidence": 0.93,
+      "latency_s": 8.11,
+      "status": "auto_approved"
+    },
+    "06_edge_math_mismatch_hardware.pdf": {
+      "passed": true,
+      "status_match": true,
+      "field_score": 0.75,
+      "issues_matched": true,
+      "actual_status": "needs_review",
+      "actual_issues": [
+        "foreign_currency",
+        "total_mismatch"
+      ],
+      "confidence": 0.7,
+      "latency_s": 6.76,
+      "status": "needs_review"
+    },
+    "07_edge_foreign_aed_no_inv_num.pdf": {
+      "passed": false,
+      "status_match": false,
+      "field_score": 0.75,
+      "issues_matched": true,
+      "actual_status": "auto_approved",
+      "actual_issues": [
+        "missing_invoice_number",
+        "foreign_currency"
+      ],
+      "confidence": 0.93,
+      "latency_s": 6.83,
+      "status": "auto_approved"
+    },
+    "08_edge_duplicate_aws_invoice.pdf": {
+      "passed": true,
+      "status_match": true,
+      "field_score": 1.0,
+      "issues_matched": true,
+      "actual_status": "needs_review",
+      "actual_issues": [
+        "possible_duplicate"
+      ],
+      "confidence": 0.75,
+      "latency_s": 5.39,
+      "status": "needs_review"
+    },
+    "09_scanned_office_supplies.png": {
+      "passed": false,
+      "status_match": false,
+      "field_score": 0.0,
+      "issues_matched": true,
+      "actual_status": "failed",
+      "actual_issues": [
+        "extract_failed"
+      ],
+      "confidence": 0.0,
+      "latency_s": 0.06,
+      "status": "failed"
+    },
+    "10_failure_nda_legal_contract.pdf": {
+      "passed": true,
+      "status_match": true,
+      "field_score": 1.0,
+      "issues_matched": true,
+      "notes": "Correctly rejected non-invoice",
+      "latency_s": 7.8,
+      "status": "rejected"
+    }
+  }
+}

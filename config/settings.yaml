@@ -1,0 +1,69 @@
+# LedgerLens configuration — edit this file, not the code.
+# Secrets (API keys) never go here: they live in .env or are pasted in the UI.
+
+app:
+  name: LedgerLens
+  base_currency: USD          # used when a document has no currency
+  max_file_mb: 20
+  max_pages: 3                # pages sent to a vision model (Groq limit = 3 images/request)
+  text_pdf_min_chars: 80      # PDFs with at least this much embedded text skip vision/OCR
+
+pipeline:
+  auto_approve: true          # clean, high-confidence docs go straight to the ledger
+  auto_approve_min_confidence: 0.80
+  max_attempts_per_provider: 2   # JSON/schema repair retries per provider
+  second_opinion: true        # re-check suspicious extractions with the next provider
+
+validation:
+  amount_tolerance: 0.02      # currency units allowed between subtotal + tax and total
+  max_age_days: 400           # older invoices get a warning
+  required_fields: [vendor_name, invoice_date, total]
+
+# Fallback order: first available provider is tried first.
+providers:
+  order: [groq, openai, ollama]
+  groq:
+    label: Groq
+    base_url: https://api.groq.com/openai/v1
+    key_env: GROQ_API_KEY
+    key_url: https://console.groq.com/keys
+    requires_key: true
+    text_model: qwen/qwen3.8-27b
+    vision_model: qwen/qwen3.8-27b
+    timeout: 60
+    extra_body: {reasoning_format: hidden}   # dropped automatically if the model rejects it
+  openai:
+    label: OpenAI
+    base_url: https://api.openai.com/v1
+    key_env: OPENAI_API_KEY
+    key_url: https://platform.openai.com/api-keys
+    requires_key: true
+    text_model: gpt-4o-mini
+    vision_model: gpt-4o-mini
+    timeout: 90
+  ollama:
+    label: Ollama (local)
+    base_url: http://localhost:11434/v1
+    key_env: OLLAMA_API_KEY
+    key_url: https://ollama.com/download
+    requires_key: false
+    text_model: qwen2.5:0.5b    # pick any installed model in Settings
+    vision_model: null          # set to a local vision model (e.g. qwen2.5vl) if installed
+    timeout: 120
+
+# USD per 1M tokens [input, output]. Used for cost estimates only — verify current prices.
+pricing:
+  gpt-4o-mini: [0.15, 0.60]
+  gpt-4.1-mini: [0.40, 1.60]
+
+# Deterministic category rules (checked before the AI suggestion).
+categories:
+  Software & SaaS: [aws, amazon web services, google cloud, github, adobe, notion, slack, openai, microsoft, figma, zoom, digitalocean, heroku, vercel, atlassian, jetbrains, cloudflare, hosting, subscription, saas]
+  Travel & Lodging: [uber, careem, airline, airways, emirates, pia, hotel, booking.com, airbnb, marriott, hilton, taxi, flight]
+  Meals & Entertainment: [restaurant, cafe, coffee, foodpanda, kfc, mcdonald, starbucks, pizza, dining, bistro, grill]
+  Office Supplies: [stationery, office supplies, staples, paper, printer ink, toner]
+  Utilities & Internet: [ptcl, k-electric, nayatel, jazz, telenor, zong, electricity, internet, broadband, utility, water bill, gas bill]
+  Professional Services: [consulting, consultancy, legal, law firm, accounting, audit, freelance, agency]
+  Hardware & Equipment: [laptop, dell, lenovo, apple store, monitor, keyboard, hardware, macbook]
+  Marketing & Ads: [facebook ads, meta platforms, google ads, linkedin ads, advertising, marketing]
+  Other: []
