@@ -249,7 +249,7 @@ async function handleFiles(files) {
     item.className = 'sample-item';
     item.innerHTML = `
       <div><strong>${file.name}</strong> <span class="meta">(${Math.round(file.size / 1024)} KB)</span></div>
-      <div class="meta" id="status-${file.name}">Uploading & Ingesting...</div>
+      <div class="meta" id="status-${file.name}"><span class="spinner spinner-primary"></span> Analyzing document with AI...</div>
     `;
     itemsContainer.prepend(item);
 
@@ -266,7 +266,7 @@ async function handleFiles(files) {
       if (res.ok) {
         statusEl.innerHTML = `<span class="badge badge-${doc.status}">${doc.status}</span>`;
       } else {
-        statusEl.innerHTML = `<span class="badge badge-failed">Error</span>`;
+        statusEl.innerHTML = `<span class="badge badge-failed">Failed</span> <button class="btn btn-sm btn-warning" style="margin-left:0.5rem;" onclick="loadDocuments()">View in Queue</button>`;
       }
     } catch (err) {
       document.getElementById(`status-${file.name}`).innerHTML = `<span class="badge badge-failed">Failed</span>`;
@@ -370,7 +370,7 @@ function renderDocRow(d) {
   const data = d.data || {};
   const total = data.total ? `${data.currency || ''} ${data.total.toLocaleString()}` : '--';
   return `
-    <tr>
+    <tr id="row-${d.id}">
       <td><strong>${d.filename}</strong><br><span class="meta">${d.created_at || ''}</span></td>
       <td>${data.vendor_name || '<span class="text-muted">Unknown</span>'}</td>
       <td><strong>${total}</strong></td>
@@ -378,7 +378,10 @@ function renderDocRow(d) {
       <td>${Math.round((d.confidence || 0) * 100)}%</td>
       <td><span class="meta">${d.provider || 'none'}</span></td>
       <td>
-        <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${d.id}')">Inspect</button>
+        <div class="btn-group">
+          ${(d.status === 'failed' || d.status === 'needs_review') ? `<button class="btn btn-sm btn-warning" onclick="retryDocument('${d.id}', event)">🔄 Retry</button>` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="openReviewModal('${d.id}')">Inspect</button>
+        </div>
       </td>
     </tr>
   `;
@@ -389,14 +392,17 @@ function renderReviewRow(d) {
   const total = data.total ? `${data.currency || ''} ${data.total.toLocaleString()}` : '--';
   const issueList = (d.issues || []).map(i => `<span class="badge badge-${i.severity === 'error' ? 'failed' : 'needs_review'}">${i.message}</span>`).join(' ');
   return `
-    <tr>
+    <tr id="rev-row-${d.id}">
       <td><strong>${d.filename}</strong></td>
       <td>${issueList || '<span class="text-muted">Flagged for verification</span>'}</td>
       <td>${data.vendor_name || 'Unknown'}</td>
       <td><strong>${total}</strong></td>
       <td>${Math.round((d.confidence || 0) * 100)}%</td>
       <td>
-        <button class="btn btn-sm btn-primary" onclick="openReviewModal('${d.id}')">Review & Fix</button>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-warning" onclick="retryDocument('${d.id}', event)">🔄 Retry</button>
+          <button class="btn btn-sm btn-primary" onclick="openReviewModal('${d.id}')">Review & Fix</button>
+        </div>
       </td>
     </tr>
   `;
@@ -567,4 +573,45 @@ async function loadLogs() {
   } catch (err) {
     console.error('Error loading logs:', err);
   }
+}
+
+// Retry processing an existing document without re-uploading
+async function retryDocument(docId, event) {
+  if (event) event.stopPropagation();
+  showToast('Re-processing document with AI...', 'info');
+
+  const overlay = document.getElementById('rev-loading-overlay');
+  if (overlay && currentDocId === docId) {
+    overlay.style.display = 'flex';
+  }
+
+  try {
+    const res = await fetch(`/api/documents/${docId}/rerun`, { method: 'POST' });
+    const doc = await res.json();
+    if (!res.ok) throw new Error(doc.detail || 'Retry failed');
+
+    if (doc.status === 'failed') {
+      const errMsg = (doc.issues && doc.issues[0]) ? doc.issues[0].message : 'AI processing failed';
+      showToast(errMsg, 'danger');
+    } else {
+      showToast(`Processed: ${doc.status} (Confidence: ${Math.round((doc.confidence || 0) * 100)}%)`, 'success');
+    }
+
+    // Refresh modal if currently open
+    if (currentDocId === docId) {
+      await openReviewModal(docId);
+    }
+    loadDocuments();
+    loadReport();
+    loadLogs();
+  } catch (err) {
+    showToast(`Retry error: ${err.message}`, 'danger');
+  } finally {
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
+async function retryCurrentDocument() {
+  if (!currentDocId) return;
+  await retryDocument(currentDocId);
 }

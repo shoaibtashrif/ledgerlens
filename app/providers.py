@@ -60,7 +60,7 @@ def friendly_error(e: Exception, label: str) -> str:
     if isinstance(e, openai.AuthenticationError):
         return f"{label}: API key rejected (401). Re-check the key in Settings."
     if isinstance(e, openai.RateLimitError):
-        return f"{label}: rate limit / quota reached (429). Wait a minute or add credits."
+        return f"{label}: Rate limit reached (free tier limit). Please wait 10-15 seconds and click 'Retry Processing'."
     if isinstance(e, openai.NotFoundError):
         return f"{label}: model not found. Pick another model in Settings."
     if isinstance(e, openai.APITimeoutError):
@@ -83,6 +83,10 @@ def chat(name: str, model: str, messages: list[dict], json_mode: bool = True) ->
 
     t0 = time.perf_counter()
     try:
+        resp = client.chat.completions.create(**kwargs)
+    except openai.RateLimitError:
+        # Wait 3 seconds for token window and retry once
+        time.sleep(3)
         resp = client.chat.completions.create(**kwargs)
     except openai.BadRequestError:
         # Some models reject json mode / reasoning params: retry once with a plain request.

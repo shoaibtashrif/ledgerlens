@@ -13,7 +13,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from .config import settings
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff", ".gif"}
-MAX_SIDE = 1800
+MAX_SIDE = 1200
 
 
 class IngestError(Exception):
@@ -41,7 +41,7 @@ def _encode(img: Image.Image) -> str:
     img = ImageOps.exif_transpose(img).convert("RGB")
     img.thumbnail((MAX_SIDE, MAX_SIDE))
     buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=88)
+    img.save(buf, format="JPEG", quality=80)
     return base64.b64encode(buf.getvalue()).decode()
 
 

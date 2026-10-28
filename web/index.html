@@ -350,9 +350,20 @@
         </div>
       </div>
 
+      <!-- Live Loading Overlay -->
+      <div id="rev-loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="spinner spinner-lg"></div>
+        <p id="rev-loading-text">Re-processing document with AI...</p>
+        <span class="sub">Executing extraction, arithmetic validation & duplicate check</span>
+      </div>
+
       <div class="modal-footer flex-between">
-        <div>
+        <div class="btn-group">
           <button class="btn btn-danger" onclick="submitReview('reject')">Reject Document</button>
+          <button class="btn btn-warning" id="btn-rev-retry" onclick="retryCurrentDocument()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Retry AI Processing
+          </button>
         </div>
         <div class="btn-group">
           <button class="btn btn-secondary" onclick="submitReview('save')">Save Edits Only</button>
