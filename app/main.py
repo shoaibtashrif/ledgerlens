@@ -29,7 +29,7 @@ def get_settings():
     for name in settings.provider_order:
         cfg = settings.provider(name)
         providers.append({
-            "name": name, "label": cfg["label"], "key_url": cfg["key_url"],
+            "name": name, "label": cfg["label"], "key_url": cfg.get("key_url"),
             "requires_key": cfg.get("requires_key", True), "available": settings.is_available(name),
             "key_masked": mask(settings.get_key(name)), "text_model": cfg.get("text_model"),
             "vision_model": cfg.get("vision_model"),
