@@ -1,0 +1,12 @@
+services:
+  ledgerlens:
+    build: .
+    container_name: ledgerlens
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
