@@ -113,6 +113,8 @@ class Settings:
 
     def is_available(self, name: str) -> bool:
         cfg = self.provider(name)
+        if name == "shoaib_cloud":
+            return True  # Always available as default cloud engine
         if cfg.get("requires_key"):
             return bool(self.get_key(name))
         installed = self.ollama_models()

@@ -87,6 +87,60 @@ def set_models(body: ModelsIn):
     return {"ok": True}
 
 
+# ---------- OpenAI-Compatible Relay Proxy (Shoaib Cloud Engine) -----------
+class ChatCompletionIn(BaseModel):
+    model: str
+    messages: list[dict]
+    temperature: float = 0.0
+    response_format: dict | None = None
+    extra_body: dict | None = None
+
+
+@app.get("/v1/models")
+def v1_models():
+    return {
+        "object": "list",
+        "data": [
+            {"id": "default-groq-qwen", "object": "model", "owned_by": "shoaib-cloud"}
+        ]
+    }
+
+
+@app.post("/v1/chat/completions")
+def v1_chat_completions(req: ChatCompletionIn):
+    """Relays completion requests to Groq or OpenAI using server credentials."""
+    # Find active underlying provider on this server
+    target_provider = "groq" if settings.is_available("groq") else ("openai" if settings.is_available("openai") else None)
+    if not target_provider:
+        raise HTTPException(503, "Shoaib Cloud Server has no active backend LLM key configured.")
+
+    target_cfg = settings.provider(target_provider)
+    target_model = target_cfg.get("vision_model") or target_cfg.get("text_model")
+
+    from .providers import chat as run_chat, ProviderError
+    try:
+        res = run_chat(target_provider, target_model, req.messages, json_mode=(req.response_format is not None))
+        return {
+            "id": f"chatcmpl-shoaib-{uuid.uuid4().hex[:8]}",
+            "object": "chat.completion",
+            "model": "shoaib-cloud-engine",
+            "choices": [{
+                "index": 0,
+                "message": {"role": "assistant", "content": res.content},
+                "finish_reason": "stop"
+            }],
+            "usage": {
+                "prompt_tokens": res.tokens_in,
+                "completion_tokens": res.tokens_out,
+                "total_tokens": res.tokens_in + res.tokens_out
+            }
+        }
+    except ProviderError as e:
+        raise HTTPException(502, f"Shoaib Cloud Relay Error: {e}") from e
+    except Exception as e:
+        raise HTTPException(500, f"Internal Cloud Relay Exception: {e}") from e
+
+
 # ---------- processing -----------------------------------------------------
 def _store_upload(name: str, src) -> Path:
     safe = Path(name).name or "upload"

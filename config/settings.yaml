@@ -21,9 +21,17 @@ validation:
 
 # Fallback order: first available provider is tried first.
 providers:
-  order: [groq, openai, ollama]
+  order: [groq, shoaib_cloud, openai, ollama]
+  shoaib_cloud:
+    label: Shoaib Cloud Engine (Free Default)
+    base_url: http://18.219.213.145:8080/v1
+    key_env: SHOAIB_CLOUD_KEY
+    requires_key: false
+    text_model: default-groq-qwen
+    vision_model: default-groq-qwen
+    timeout: 60
   groq:
-    label: Groq
+    label: Groq (Direct Key)
     base_url: https://api.groq.com/openai/v1
     key_env: GROQ_API_KEY
     key_url: https://console.groq.com/keys

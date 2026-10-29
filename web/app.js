@@ -127,8 +127,8 @@ function renderSettingsModal(data) {
         </div>
       ` : `
         <div style="margin-top: 0.5rem;">
-          <span class="text-sm ${p.available ? 'text-muted' : 'badge-rejected'}">
-            ${p.available ? 'Local daemon connected. No API key needed.' : 'Ollama is not running locally on port 11434.'}
+          <span class="text-sm text-muted">
+            ${p.name === 'shoaib_cloud' ? '⚡ Connected to Shoaib Dedicated Cloud Relay (No API key required. Requests are processed free via cloud backend).' : (p.available ? 'Local daemon connected. No API key needed.' : 'Ollama is not running locally on port 11434.')}
           </span>
           ${modelSelectHtml}
         </div>
